@@ -1,0 +1,475 @@
+<script>
+    const diagonal0=0;//topo esquerdo
+    const diagonal1=1;//topo direito
+    const diagonal2=2;//piso esquerdo
+    const diagonal3=3;//piso direito
+    const quantidadeCelulasPorLinha=8;    
+    let pecaEscolhida=null;//peça a ser movida
+    let jogador="1";//definir quem pode jogar
+    const escolherPeca=(element)=>{
+        pecaEscolhida=element;
+    }
+    const moverPeca=(element)=>{
+        if(
+            (
+                (
+                    (
+                        (jogador=="1")
+                        &&
+                        (pecaEscolhida.innerHTML=="🟡")
+                    )
+                    ||
+                    (
+                        (jogador=="2")
+                        &&
+                        (pecaEscolhida.innerHTML=="🔵")
+                    )
+                )
+                &&
+                (
+                    (
+                        somenteParaFrente(element)
+                        &&
+                        somenteUmaCasa(element)
+                    )
+                    ||
+                    //se for a primeira captura
+                    capturaFrenteUmaCasa(element)
+                    //capturaTrazUmaCasa(element)
+                    //se for a se a segunda
+                )
+            )
+            ||
+            (
+                (
+                    (
+                        (jogador=="1")
+                        &&
+                        (pecaEscolhida.innerHTML=="👱‍♀️")
+                    )
+                    ||
+                    (
+                        (jogador=="2")
+                        &&
+                        (pecaEscolhida.innerHTML=="👩")
+                    )
+                )
+                &&
+                (
+                    movimentoDama(element)
+                    ||
+                    capturaDama(element)
+                ) 
+            )
+            &&
+            (element!==pecaEscolhida)//não permite jogada na mesma casa
+            &&
+            (element.innerHTML=="")//não permite duas peças na mesma casa
+            && 
+            (linhaParImpar(element)==celulaParImpar(element))
+            //não permite movimento na casa branca
+        )
+        {
+            if(capturaFrenteUmaCasa(element)){
+                let oponente=(pecaEscolhida.innerHTML=="🔵")?"🟡":"🔵";
+                console.log("peça capturada: "+oponente);
+                capturar(element);
+            }
+            element.innerHTML=pecaEscolhida.innerHTML;//duplica a peca para o destino
+            pecaEscolhida.innerHTML="";//elimina a peca anterior
+            virarDama(element);
+            jogador=jogador=="1"?"2":"1";//muda o jogador
+        }
+        else if(element==pecaEscolhida){
+            console.log("mesma peça");
+        }
+        else if(element.innerHTML!=""){
+            console.log("a casa esta ocupada");
+        }
+        //somente mover duas casas se for na direcao do oponente
+        //quando chegar no final virar dama
+        //a dama se movimenta quantas casas ela quer
+        //a dama move para traz
+        /*
+        se for dama basta estar na linha de movimento e 
+        ter uma casa vázia
+        */
+    }
+    const linhaParImpar=(element)=>{
+      let linha=element.parentNode;
+      let tabuleiro=linha.parentNode;
+      let linhas=Array.from(tabuleiro.getElementsByClassName('row'));
+      posicaoLinha=linhas.indexOf(linha);
+      return ((posicaoLinha%2)==0);
+    }
+    const celulaParImpar=(element)=>{
+     let celulas=Array.from(document.getElementsByClassName('cell'));
+     posicaoCelula=celulas.indexOf(element);
+     return ((posicaoCelula%2)==0);
+    }
+    const somenteParaFrente=(element)=>{
+        let celulas=Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem=celulas.indexOf(pecaEscolhida);
+        let posicaoDestino=celulas.indexOf(element);
+        return (
+            (
+                (pecaEscolhida.innerHTML=="🟡")
+                &&
+                (posicaoOrigem<posicaoDestino)
+            )
+            ||
+            (
+                (pecaEscolhida.innerHTML=="🔵")
+                &&
+                (posicaoOrigem>posicaoDestino)
+            )
+        );
+    }
+    const somenteUmaCasa=(element)=>{
+        let celulas=Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem=celulas.indexOf(pecaEscolhida);
+        let posicaoDestino=celulas.indexOf(element);
+        return (
+            (
+                (pecaEscolhida.innerHTML=="🟡")
+                &&
+                (
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha>0)//não é canto esquerdo
+                        &&
+                        ((posicaoOrigem+(quantidadeCelulasPorLinha-1))==posicaoDestino)//casa diagonal de avanço esquerdo
+                    )
+                    ||
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha<(quantidadeCelulasPorLinha-1))//não é canto direito
+                        &&
+                        ((posicaoOrigem+(quantidadeCelulasPorLinha+1))==posicaoDestino)//casa diagonal de avanço direito
+                    )
+                )
+            )
+            ||
+            (
+                (pecaEscolhida.innerHTML=="🔵")
+                &&
+                (
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha>0)//não é canto esquerdo
+                        &&
+                        ((posicaoOrigem-(quantidadeCelulasPorLinha+1))==posicaoDestino)//casa diagonal de avanço esquerdo
+                    )
+                    ||
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha<(quantidadeCelulasPorLinha-1))//não é canto direito
+                        &&
+                        ((posicaoOrigem-(quantidadeCelulasPorLinha-1))==posicaoDestino)//casa diagonal de avanço direito
+                    )
+                )
+            )
+        );
+    }
+    const capturaFrenteUmaCasa=(element)=>{
+        return (
+            frenteOponente(element)
+            &&
+            casaVagaAtrazOponente(element)
+        );
+    }
+    const frenteOponente=(element)=>{
+        const avancoCasa=1;
+        let celulas=Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem=celulas.indexOf(pecaEscolhida);
+        let posicaoDestino=celulas.indexOf(element);
+        let posicaoOponente=posicaoOrigem+((posicaoDestino-posicaoOrigem)/2);
+        const result= 
+        (
+            (
+                (pecaEscolhida.innerHTML=="🟡")
+                &&
+                (
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha>(avancoCasa-1))//não é canto esquerdo
+                        &&
+                        (posicaoOponente==posicaoOrigem+avancoCasa*(quantidadeCelulasPorLinha-1))
+                        &&
+                        (celulas[posicaoOponente].innerHTML=="🔵")//é oponente
+                    )
+                    ||
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha<(quantidadeCelulasPorLinha-avancoCasa))//não é canto direito
+                        &&
+                        (posicaoOponente==posicaoOrigem+avancoCasa*(quantidadeCelulasPorLinha+1))
+                        &&
+                        (celulas[posicaoOponente].innerHTML=="🔵")//é oponente
+                    )
+                )
+            )
+            ||
+            (
+                (pecaEscolhida.innerHTML=="🔵")
+                &&
+                (
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha>(avancoCasa-1))//não é canto esquerdo
+                        &&
+                        (posicaoOponente==posicaoOrigem-avancoCasa*(quantidadeCelulasPorLinha+1))
+                        &&
+                        (celulas[posicaoOponente].innerHTML=="🟡")//é oponente
+                    )
+                    ||
+                    (
+                        (posicaoOrigem%quantidadeCelulasPorLinha<(quantidadeCelulasPorLinha-avancoCasa))//não é canto direito
+                        &&
+                        (posicaoOponente==posicaoOrigem-avancoCasa*(quantidadeCelulasPorLinha-1))
+                        &&
+                        (celulas[posicaoOponente].innerHTML=="🟡")//é oponente
+                    )
+                )
+            )
+        );
+        return result;
+    }
+    const casaVagaAtrazOponente=(element)=>{
+        const avancoCasa=2;
+        let celulas=Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem=celulas.indexOf(pecaEscolhida);
+        let posicaoDestino=celulas.indexOf(element);
+        return (
+            (
+                (Math.abs(posicaoOrigem-posicaoDestino)==avancoCasa*(quantidadeCelulasPorLinha-1))
+                ||
+                (Math.abs(posicaoOrigem-posicaoDestino)==avancoCasa*(quantidadeCelulasPorLinha+1))
+            )
+            &&
+            (element.innerHTML=="")
+        );
+    }
+    const capturar=(element)=>{
+        let celulas=Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem=celulas.indexOf(pecaEscolhida);
+        let posicaoDestino=celulas.indexOf(element);
+        let posicaoOponente=posicaoOrigem+((posicaoDestino-posicaoOrigem)/2);
+        if(
+            (posicaoOponente>=0)
+            &&
+            (posicaoOponente<(quantidadeCelulasPorLinha*quantidadeCelulasPorLinha))
+        )
+        celulas[posicaoOponente].innerHTML="";
+    }
+    const virarDama=(element)=>{
+        let linha=element.parentNode;
+        let tabuleiro=linha.parentNode;
+        let linhas=Array.from(tabuleiro.getElementsByClassName('row'));
+        posicaoLinha=linhas.indexOf(linha);
+        if
+            (
+                (element.innerHTML=="🟡")
+                &&
+                (posicaoLinha==7)
+            )
+        {
+            element.innerHTML="👱‍♀️"
+        }
+        else if
+            (
+                (element.innerHTML=="🔵")
+                &&
+                (posicaoLinha==0)
+            )
+        {
+            element.innerHTML="👩"
+        }
+    }
+    movimentoDama = (element) => {
+        let celulas = Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem = celulas.indexOf(pecaEscolhida);
+        let posicaoDestino = celulas.indexOf(element);
+        let diferenca = Math.abs(posicaoOrigem - posicaoDestino);
+        
+        // Verifica se o movimento é em uma diagonal
+        if (diferenca % (quantidadeCelulasPorLinha + 1) === 0 || diferenca % (quantidadeCelulasPorLinha - 1) === 0) {
+            let passo = diferenca % (quantidadeCelulasPorLinha + 1) === 0 ? (quantidadeCelulasPorLinha + 1) : (quantidadeCelulasPorLinha - 1);
+            
+            // Percorre as casas intermediárias entre origem e destino
+            for (let i = posicaoOrigem + passo * (posicaoOrigem < posicaoDestino ? 1 : -1); i !== posicaoDestino; i += passo * (posicaoOrigem < posicaoDestino ? 1 : -1)) {
+                if (celulas[i].innerHTML !== "") return false; // Interrompe se houver alguma peça no caminho
+            }
+            return true;
+        }
+        return false;
+    }
+    capturaDama = (element) => {
+        let celulas = Array.from(document.getElementsByClassName('cell'));
+        let posicaoOrigem = celulas.indexOf(pecaEscolhida);
+        let posicaoDestino = celulas.indexOf(element);
+        let diferenca = Math.abs(posicaoOrigem - posicaoDestino);
+    
+        // Verifica se a dama está se movendo em uma diagonal válida para captura
+        if (diferenca % (quantidadeCelulasPorLinha + 1) === 0 || diferenca % (quantidadeCelulasPorLinha - 1) === 0) {
+            let passo = diferenca % (quantidadeCelulasPorLinha + 1) === 0 ? (quantidadeCelulasPorLinha + 1) : (quantidadeCelulasPorLinha - 1);
+            let direcao = posicaoOrigem < posicaoDestino ? 1 : -1;
+            
+            // Verifica o caminho até o destino
+            let caminhoLivre = true;
+            let posicaoAtual = posicaoOrigem + passo * direcao;
+            let posicaoOponente = -1;
+    
+            // Itera pelo caminho verificando se as casas estão vazias até encontrar oponente
+            while (posicaoAtual !== posicaoDestino) {
+                if (celulas[posicaoAtual].innerHTML !== "") {
+                    // Verifica se a peça no caminho é oponente
+                    if (celulas[posicaoAtual].innerHTML !== pecaEscolhida.innerHTML && posicaoOponente === -1) {
+                        posicaoOponente = posicaoAtual;
+                    } else {
+                        // Se encontra outra peça antes do destino, não pode capturar
+                        caminhoLivre = false;
+                        break;
+                    }
+                }
+                posicaoAtual += passo * direcao;
+            }
+    
+            // Se a casa após o oponente e a casa de destino estão vazias, captura
+            if (
+                caminhoLivre &&
+                posicaoOponente !== -1 &&
+                element.innerHTML === ""
+            ) {
+                celulas[posicaoOponente].innerHTML = ""; // Remove a peça capturada
+                return true;
+            }
+        }
+        return false;
+    }
+    
+</script>
+<style>
+    html,body{
+        margin: 0 0 0 0;
+        padding: 0 0 0 0;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .row{
+        width:100%;
+        display:flex;
+        flex-wrap:nowrap;
+    }
+    .cell{
+        width:100%;
+        display:flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 36px;
+        line-height:20%;
+    }
+    /*linhas pares celulas pares inicia-se com 0
+    */
+    .row:nth-child(even) .cell:nth-child(even) {
+        background-color: black;
+        color:white;
+    }
+    .row:nth-child(even) .cell:nth-child(odd):hover {
+        background-color: red;
+    }
+    
+    /*linhas impares celulas impares inicia-se com 0*/
+    .row:nth-child(odd) .cell:nth-child(odd) {
+        background-color: black;
+        color:white;
+    }
+    .row:nth-child(odd) .cell:nth-child(even):hover {
+        background-color: red;
+    }
+    
+    a.piece{
+        -moz-border-radius: 10px;/*mozilla firefox*/
+        -webkit-border-radius: 10px;/*google*/
+        border-radius: 10px;/*comum*/
+        -o-border-radius-topleft: 10px;/*opera*/
+        -o-border-radius-topright: 10px;
+        -o-border-radius-bottomleft: 10px;
+        -o-border-radius-bottomright: 10px;
+    }
+</style>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🟡</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+</div>
+<div class="row" >
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)"></button>
+    <button class="cell" onmouseup="moverPeca(this)" onmousedown="escolherPeca(this)">🔵</button>
+</div>
